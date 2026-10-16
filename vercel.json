@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://placar-corrida-rua-backend.onrender.com/api/:path*"
+    }
+  ]
+}
