@@ -1,16 +1,26 @@
-# React + Vite
+# Placar de Corrida de Rua
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React + Vite para consultar os resultados de uma corrida de rua.
 
-Currently, two official plugins are available:
+## Desenvolvimento local
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Instale as dependências com `npm install`.
+2. Copie `.env.example` para `.env` e defina o endereço base da API em `VITE_API_BASE_URL`.
+3. Inicie o servidor local com `npm run dev`.
 
-## React Compiler
+Exemplo no PowerShell:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```powershell
+Copy-Item .env.example .env
+```
 
-## Expanding the ESLint configuration
+O `.env` local é ignorado pelo Git. Para outros ambientes, configure `VITE_API_BASE_URL` na configuração de build/deploy e gere novamente os arquivos estáticos.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+> Variáveis com prefixo `VITE_` são incluídas no JavaScript enviado ao navegador. O endereço da API é configuração pública; não coloque tokens, senhas ou outras credenciais nessas variáveis.
+
+## Verificações
+
+```sh
+npm run lint
+npm run build
+```

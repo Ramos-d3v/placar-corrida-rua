@@ -493,7 +493,11 @@ function App() {
           returnToResults()
         }}>PLACAR<span>.</span></a>
         <span>RESULTADOS QUE CONTAM HISTÓRIAS</span>
-        <a href={`${API_BASE_URL}/swagger/`} target="_blank" rel="noreferrer">API de resultados <Icon name="arrow" size={14} /></a>
+        {API_BASE_URL && (
+          <a href={`${API_BASE_URL}/swagger/`} target="_blank" rel="noreferrer">
+            API de resultados <Icon name="arrow" size={14} />
+          </a>
+        )}
       </footer>
     </div>
   )

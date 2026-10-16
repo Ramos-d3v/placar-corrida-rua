@@ -1,8 +1,27 @@
-const DEFAULT_API_BASE_URL = 'https://placar-corrida-rua-backend.onrender.com'
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '')
+  .trim()
+  .replace(/\/+$/, '')
 
-export const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
-).replace(/\/+$/, '')
+function getApiBaseUrl() {
+  if (!API_BASE_URL) {
+    throw new Error(
+      'URL da API não configurada. Defina VITE_API_BASE_URL no arquivo .env.',
+    )
+  }
+
+  let parsedUrl
+  try {
+    parsedUrl = new URL(API_BASE_URL)
+  } catch {
+    throw new Error('VITE_API_BASE_URL precisa ser uma URL HTTP ou HTTPS válida.')
+  }
+
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    throw new Error('VITE_API_BASE_URL precisa usar o protocolo HTTP ou HTTPS.')
+  }
+
+  return API_BASE_URL
+}
 
 async function requestJson(url, signal) {
   const response = await fetch(url, {
@@ -43,7 +62,7 @@ export async function fetchResults({
   search = '',
   signal,
 }) {
-  const url = new URL(`${API_BASE_URL}/api/results`)
+  const url = new URL(`${getApiBaseUrl()}/api/results`)
   url.searchParams.set('page', String(page))
   url.searchParams.set('limit', String(Math.min(Math.max(limit, 1), 100)))
 
@@ -61,6 +80,6 @@ export async function fetchResults({
 }
 
 export async function fetchParticipant(bibNumber, signal) {
-  const url = `${API_BASE_URL}/api/results/${encodeURIComponent(bibNumber)}`
+  const url = `${getApiBaseUrl()}/api/results/${encodeURIComponent(bibNumber)}`
   return requestJson(url, signal)
 }
