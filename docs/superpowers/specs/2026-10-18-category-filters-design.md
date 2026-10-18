@@ -21,10 +21,10 @@ Present category choices and participant categories as readable labels, for exam
 
 ### Filters and API requests
 
-- Keep the existing Geral, Feminino, and Masculino tabs.
+- Keep only the Feminino and Masculino tabs, with Feminino selected initially.
 - Replace the incompatible age-only choices with exact sex-and-age category choices.
-- Selecting a category sets both the category code and its corresponding gender tab. The request sends the exact category code and the existing gender filter value.
-- Selecting Geral, Feminino, or Masculino clears any selected exact category, so the two controls never present conflicting filters.
+- Selecting a category sets both the category code and its corresponding gender tab. The request sends the exact category code and the gender value used by the supplied payload (`FEMININO` or `MASCULINO`).
+- Selecting Feminino or Masculino clears any selected exact category, so the two controls never present conflicting filters.
 - Keep pagination, search, request cancellation, loading, and error behavior unchanged. Reset to page 1 whenever either filter changes.
 - Continue to use `rank_category` for a selected exact category and `rank_general` when no exact category is selected.
 
@@ -37,8 +37,9 @@ Update the existing project plan that documents the old age bands so it describe
 ## Validation
 
 - Run `npm run lint` and `npm run build`.
-- Verify selecting a feminine category sends `gender=Feminino` and the exact category such as `F35-39`; verify the masculine equivalent sends `gender=Masculino` and `M35-39`.
-- Verify each gender tab clears the exact category and resets pagination to page 1.
+- Verify the page initially selects Feminino, and the only gender tabs are Feminino and Masculino.
+- Verify selecting a feminine category sends `gender=FEMININO` and the exact category such as `F35-39`; verify the masculine equivalent sends `gender=MASCULINO` and `M35-39`.
+- Verify switching gender tabs clears the exact category and resets pagination to page 1.
 - Verify table and participant-detail category labels decode known prefixes and ranges, while unknown category values remain visible.
 - Verify the filter remains usable at the existing narrow-screen breakpoint.
 

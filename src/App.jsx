@@ -6,12 +6,33 @@ import {
 } from './services/resultsApi.js'
 
 const PAGE_SIZE = 50
-const AGE_CATEGORIES = ['18-24', '25-34', '35-44', '45-54', '55+']
-const GENDER_TABS = [
-  { id: 'geral', label: 'Geral', gender: '' },
-  { id: 'feminino', label: 'Feminino', gender: 'Feminino' },
-  { id: 'masculino', label: 'Masculino', gender: 'Masculino' },
+const AGE_CATEGORIES = [
+  '15-19',
+  '20-24',
+  '25-29',
+  '30-34',
+  '35-39',
+  '40-44',
+  '45-49',
+  '50-54',
+  '55-59',
+  '60-64',
+  '65+',
 ]
+const GENDER_TABS = [
+  { id: 'feminino', label: 'Feminino', gender: 'FEMININO' },
+  { id: 'masculino', label: 'Masculino', gender: 'MASCULINO' },
+]
+const CATEGORY_OPTIONS = [
+  { prefix: 'F', gender: 'Feminino', genderTab: 'feminino' },
+  { prefix: 'M', gender: 'Masculino', genderTab: 'masculino' },
+].flatMap(({ prefix, gender, genderTab }) =>
+  AGE_CATEGORIES.map((age) => ({
+    value: `${prefix}${age}`,
+    label: `${gender} · ${age.replace('-', '–')} anos`,
+    genderTab,
+  })),
+)
 
 function getBibFromPath() {
   const match = window.location.pathname.match(/^\/resultados\/([^/]+)\/?$/)
@@ -27,6 +48,15 @@ function getBibFromPath() {
 function formatTime(value) {
   if (!value) return '—'
   return value
+}
+
+function formatCategory(category = '') {
+  const match = /^([FM])(\d+-\d+|\d+\+)$/.exec(category)
+  if (!match) return category
+
+  const [, prefix, age] = match
+  const gender = prefix === 'F' ? 'Feminino' : 'Masculino'
+  return `${gender} · ${age.replace('-', '–')} anos`
 }
 
 function formatDate(value) {
@@ -117,7 +147,7 @@ function Icon({ name, size = 18 }) {
 }
 
 function App() {
-  const [genderTab, setGenderTab] = useState('geral')
+  const [genderTab, setGenderTab] = useState('feminino')
   const [category, setCategory] = useState('')
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
@@ -235,12 +265,16 @@ function App() {
   const changeGender = (id) => {
     beginListLoad()
     setGenderTab(id)
+    setCategory('')
     setPage(1)
   }
 
   const changeCategory = (event) => {
     beginListLoad()
-    setCategory(event.target.value)
+    const nextCategory = event.target.value
+    const option = CATEGORY_OPTIONS.find(({ value }) => value === nextCategory)
+    setCategory(nextCategory)
+    if (option) setGenderTab(option.genderTab)
     setPage(1)
   }
 
@@ -255,9 +289,10 @@ function App() {
   const total = pagination?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const eventDate = formatDate(event?.imported_at)
+  const selectedCategory = CATEGORY_OPTIONS.find(({ value }) => value === category)
+  const selectedGenderLabel = GENDER_TABS.find(({ id }) => id === genderTab)?.label ?? ''
   const activeFilters = [
-    selectedGender,
-    category ? `Idade ${category}` : '',
+    category ? selectedCategory?.label ?? formatCategory(category) : selectedGenderLabel,
     search ? `Busca: ${search}` : '',
   ].filter(Boolean)
 
@@ -369,11 +404,11 @@ function App() {
                   </div>
 
                   <label className="category-filter">
-                    <span className="sr-only">Filtrar por faixa etária</span>
+                    <span className="sr-only">Filtrar por categoria</span>
                     <select value={category} onChange={changeCategory}>
-                      <option value="">Todas as idades</option>
-                      {AGE_CATEGORIES.map((age) => (
-                        <option value={age} key={age}>{age} anos</option>
+                      <option value="">Todas as categorias</option>
+                      {CATEGORY_OPTIONS.map((option) => (
+                        <option value={option.value} key={option.value}>{option.label}</option>
                       ))}
                     </select>
                     <span className="select-chevron" aria-hidden="true">⌄</span>
@@ -415,7 +450,7 @@ function App() {
               <div className="results-header">
                 <div>
                   <span className="results-overline">CLASSIFICAÇÃO</span>
-                  <h3>{category ? `Categoria ${category}` : GENDER_TABS.find((tab) => tab.id === genderTab)?.label}</h3>
+                  <h3>{category ? `Categoria ${selectedCategory?.label ?? formatCategory(category)}` : GENDER_TABS.find((tab) => tab.id === genderTab)?.label}</h3>
                 </div>
                 <div className="results-count">
                   {listLoading ? 'Carregando…' : `${total.toLocaleString('pt-BR')} resultados`}
@@ -451,7 +486,7 @@ function App() {
                   {(activeFilters.length > 0 || search) && (
                     <button className="reset-filters" type="button" onClick={() => {
                       beginListLoad()
-                      setGenderTab('geral')
+                      setGenderTab('feminino')
                       setCategory('')
                       setSearch('')
                       setSearchDraft('')
@@ -509,7 +544,7 @@ function ResultsTable({ results, category, onSelect }) {
       <table className="results-table">
         <thead>
           <tr>
-            <th className="position-heading">{category ? 'FAIXA' : 'POS.'}</th>
+            <th className="position-heading">{category ? 'CAT. POS.' : 'POS.'}</th>
             <th>ATLETA</th>
             <th className="bib-heading">PEITO</th>
             <th className="category-heading">CATEGORIA</th>
@@ -540,7 +575,7 @@ function ResultsTable({ results, category, onSelect }) {
                   </button>
                 </td>
                 <td className="bib-cell"><span>#{result.bib_number}</span></td>
-                <td className="category-cell">{result.category || '—'}</td>
+                <td className="category-cell">{formatCategory(result.category) || '—'}</td>
                 <td className="time-cell">{formatTime(time)}</td>
                 <td className="team-cell">{result.team_name || '—'}</td>
                 <td className="row-action-cell">
@@ -569,6 +604,7 @@ function ResultsLoading() {
 function ParticipantDetail({ bibNumber, participant, loading, error, onBack }) {
   const result = participant?.result ?? participant
   const event = participant?.event
+  const categoryIncludesGender = /^[FM]\d/.test(result?.category ?? '')
 
   return (
     <section className="detail-section">
@@ -590,7 +626,11 @@ function ParticipantDetail({ bibNumber, participant, loading, error, onBack }) {
             <span className="participant-avatar">{initials(result.athlete_name)}</span>
             <div>
               <h1>{result.athlete_name}</h1>
-              <p>{[result.gender, result.category, result.team_name].filter(Boolean).join(' · ') || 'Participante'}</p>
+              <p>{[
+                categoryIncludesGender ? formatCategory(result.category) : result.gender,
+                categoryIncludesGender ? '' : formatCategory(result.category),
+                result.team_name,
+              ].filter(Boolean).join(' · ') || 'Participante'}</p>
             </div>
           </div>
           <div className="participant-event">

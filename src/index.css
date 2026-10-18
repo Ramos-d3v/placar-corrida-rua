@@ -505,7 +505,7 @@ main {
 }
 
 .category-filter select {
-  min-width: 151px;
+  min-width: 220px;
   appearance: none;
   padding: 10px 27px 10px 12px;
   border: 1px solid #ddddd4;
