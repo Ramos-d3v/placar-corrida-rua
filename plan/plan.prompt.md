@@ -53,11 +53,11 @@ O POST é público, não exige credenciais e **substitui integralmente o evento 
 
 ## 4. Regras do MVP
 
-1. **Seleção inicial:** abrir com Feminino selecionado. As listas por gênero exibem `rank_general`; uma categoria específica exibe `rank_category` quando estiver presente.
+1. **Seleção inicial:** abrir com a categoria Feminino · 15–19 selecionada. Categorias específicas exibem `rank_category` quando estiver presente.
 2. **Feminino/Masculino:** enviar no filtro `gender` o valor exato usado nos dados deste evento, `FEMININO` ou `MASCULINO`. A tela preserva a ordenação e a posição geral devolvidas pela API; não inventa uma posição por gênero que a API não fornece.
 3. **Categorias:** o código de categoria é composto pelo prefixo de gênero (`F` ou `M`) e pela faixa etária, por exemplo `F35-39` ou `M35-39`. Para este evento, as faixas são `15-19`, `20-24`, `25-29`, `30-34`, `35-39`, `40-44`, `45-49`, `50-54`, `55-59`, `60-64` e `65+`. Enviar o código completo no parâmetro exato `category`; o frontend não calcula idade.
 4. **Posição por faixa:** exibir `rank_category` quando estiver presente; não recalcular posições localmente, porque a resposta é paginada e o contrato não fornece idade ou os dados completos de todos os participantes em cada página.
-5. **Filtros combinados:** selecionar uma categoria define o gênero correspondente e envia `category` com o código exato (`F...` ou `M...`) e `gender` com o valor exato (`FEMININO` ou `MASCULINO`). Selecionar uma aba de gênero limpa a categoria específica. Busca continua combinável com ambos.
+5. **Filtros combinados:** sempre manter uma categoria de gênero e faixa etária selecionada; não oferecer uma opção sem filtro como “Todas as categorias”. Selecionar uma categoria define a aba correspondente e envia `category` com o código exato (`F...` ou `M...`) e `gender` com o valor exato (`FEMININO` ou `MASCULINO`). Selecionar uma aba de gênero mantém a faixa etária e troca para o código da outra categoria correspondente. Busca continua combinável com ambos.
 6. **Busca:** pesquisar por nome ou parte do número de peito com o parâmetro `search`; executar a consulta ao enviar o formulário/pressionar Enter, não a cada tecla. Ao aplicar uma busca ou mudar filtros, voltar à página 1.
 7. **Detalhe:** permitir abrir o resultado individual usando `GET /api/results/{bibNumber}`. A navegação pode ser mantida simples no MVP, sem adicionar uma biblioteca de rotas.
 8. **Dados:** usar apenas a resposta da API como fonte do placar. Não manter cópia persistente no navegador nem fabricar registros quando a consulta falhar.
@@ -72,7 +72,7 @@ O contrato possui `rank_general` e um único `rank_category`; não possui uma po
 
 - Cabeçalho com título do evento e total de resultados, quando disponíveis.
 - Controles apenas para Feminino e Masculino; Feminino é selecionado inicialmente.
-- Filtro de categoria combinada, com opções como “Feminino · 35–39 anos” e “Masculino · 35–39 anos”; a opção “Todas as categorias” remove o filtro.
+- Filtro de categoria combinada, com opções como “Feminino · 35–39 anos” e “Masculino · 35–39 anos”; sempre deve haver uma faixa etária específica selecionada.
 - Campo de busca por nome/número de peito.
 - Tabela de resultados com posição, número de peito, atleta, gênero, categoria, tempo e equipe; valores opcionais ausentes não devem ser substituídos por dados inventados.
 - Paginação usando os valores de `pagination` recebidos da API, respeitando no máximo 100 itens por requisição.
@@ -121,7 +121,7 @@ O contrato possui `rank_general` e um único `rank_category`; não possui uma po
 
 - A tela inicial consulta `GET /api/results` e apresenta evento, resultados e paginação.
 - Feminino e Masculino enviam o filtro esperado e não mostram duplicatas dentro da própria lista.
-- As cinco faixas etárias usam exatamente os valores definidos no campo `category`.
+- As onze faixas etárias usam exatamente os valores definidos no campo `category`.
 - Busca por nome e por parte do número de peito, ao ser enviada, atualiza os resultados e reinicia a paginação sem consultar a API a cada tecla.
 - Mudanças de filtro não deixam uma resposta anterior substituir os dados atuais da tela.
 - `rank_general` e `rank_category` são apresentados conforme a lista/valor fornecido pela API, sem cálculo enganoso no cliente.

@@ -1,6 +1,6 @@
 {
   "event_title": "1 Circuito de Corrida de Rua Lagoinhense 2ª Etapa Dalé Hotel",
-  "event_slug": "corrida",
+  "event_slug": "",
   "total_results": 116,
   "results": [
     {
@@ -43,12 +43,12 @@
       "bib_number": "9",
       "athlete_name": "BRENO SANTOS COSTA",
       "category": "M15-19",
-      "status": "L",
+      "status": "C",
       "gender": "MASCULINO",
       "rank_general": 56,
-      "rank_category": 3,
-      "time_gross": "00:00:00.412",
-      "time_net": "00:00:00.000",
+      "rank_category": 1,
+      "time_gross": "01:45:48.577",
+      "time_net": "00:39:03.165",
       "team_name": "G-ALVES"
     },
     {
@@ -81,10 +81,10 @@
       "category": "M30-34",
       "status": "C",
       "gender": "MASCULINO",
-      "rank_general": 12,
-      "rank_category": 3,
-      "time_gross": "00:40:56.883",
-      "time_net": "00:40:56.453",
+      "rank_general": 11,
+      "rank_category": 2,
+      "time_gross": "00:40:40.010",
+      "time_net": "00:40:40.010",
       "team_name": ""
     },
     {
@@ -129,8 +129,8 @@
       "category": "M30-34",
       "status": "C",
       "gender": "MASCULINO",
-      "rank_general": 11,
-      "rank_category": 2,
+      "rank_general": 12,
+      "rank_category": 3,
       "time_gross": "00:40:56.590",
       "time_net": "00:40:56.081",
       "team_name": "RK-RUNNERS"
@@ -166,7 +166,7 @@
       "status": "C",
       "gender": "MASCULINO",
       "rank_general": 10,
-      "rank_category": 1,
+      "rank_category": 2,
       "time_gross": "00:39:30.291",
       "time_net": "00:39:29.530",
       "team_name": "ALEGRIA EM CORRER"
@@ -252,7 +252,7 @@
       "rank_general": 15,
       "rank_category": 1,
       "time_gross": "00:41:16.359",
-      "time_net": "00:41:14.076",
+      "time_net": "00:40:21.076",
       "team_name": "MASTRE UNIDOS DE TREMEMBE"
     },
     {
@@ -360,7 +360,7 @@
       "rank_general": 16,
       "rank_category": 1,
       "time_gross": "00:41:35.143",
-      "time_net": "00:41:31.980",
+      "time_net": "00:40:20.980",
       "team_name": ""
     },
     {
@@ -696,7 +696,7 @@
       "rank_general": 58,
       "rank_category": 6,
       "time_gross": "01:45:48.577",
-      "time_net": "01:45:42.357",
+      "time_net": "01:27:37.256",
       "team_name": ""
     },
     {
@@ -1222,7 +1222,7 @@
       "status": "C",
       "gender": "MASCULINO",
       "rank_general": 47,
-      "rank_category": 2,
+      "rank_category": 3,
       "time_gross": "01:08:06.755",
       "time_net": "01:07:52.508",
       "team_name": ""
@@ -1380,7 +1380,7 @@
       "rank_general": 35,
       "rank_category": 5,
       "time_gross": "00:55:47.594",
-      "time_net": "00:55:47.594",
+      "time_net": "00:50:01.594",
       "team_name": ""
     },
     {

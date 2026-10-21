@@ -20,17 +20,14 @@ const AGE_CATEGORIES = [
   '65+',
 ]
 const GENDER_TABS = [
-  { id: 'feminino', label: 'Feminino', gender: 'FEMININO' },
-  { id: 'masculino', label: 'Masculino', gender: 'MASCULINO' },
+  { id: 'feminino', label: 'Feminino', gender: 'FEMININO', prefix: 'F' },
+  { id: 'masculino', label: 'Masculino', gender: 'MASCULINO', prefix: 'M' },
 ]
-const CATEGORY_OPTIONS = [
-  { prefix: 'F', gender: 'Feminino', genderTab: 'feminino' },
-  { prefix: 'M', gender: 'Masculino', genderTab: 'masculino' },
-].flatMap(({ prefix, gender, genderTab }) =>
+const CATEGORY_OPTIONS = GENDER_TABS.flatMap(({ prefix, label, id }) =>
   AGE_CATEGORIES.map((age) => ({
     value: `${prefix}${age}`,
-    label: `${gender} · ${age.replace('-', '–')} anos`,
-    genderTab,
+    label: `${label} · ${age.replace('-', '–')} anos`,
+    genderTab: id,
   })),
 )
 
@@ -148,7 +145,7 @@ function Icon({ name, size = 18 }) {
 
 function App() {
   const [genderTab, setGenderTab] = useState('feminino')
-  const [category, setCategory] = useState('')
+  const [category, setCategory] = useState('F15-19')
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -262,10 +259,10 @@ function App() {
     setSearch(searchDraft.trim())
   }
 
-  const changeGender = (id) => {
+  const changeGender = (tab) => {
     beginListLoad()
-    setGenderTab(id)
-    setCategory('')
+    setGenderTab(tab.id)
+    setCategory(`${tab.prefix}${category.slice(1) || AGE_CATEGORIES[0]}`)
     setPage(1)
   }
 
@@ -396,7 +393,7 @@ function App() {
                         key={tab.id}
                         type="button"
                         aria-pressed={genderTab === tab.id}
-                        onClick={() => changeGender(tab.id)}
+                        onClick={() => changeGender(tab)}
                       >
                         {tab.label}
                       </button>
@@ -406,7 +403,6 @@ function App() {
                   <label className="category-filter">
                     <span className="sr-only">Filtrar por categoria</span>
                     <select value={category} onChange={changeCategory}>
-                      <option value="">Todas as categorias</option>
                       {CATEGORY_OPTIONS.map((option) => (
                         <option value={option.value} key={option.value}>{option.label}</option>
                       ))}
