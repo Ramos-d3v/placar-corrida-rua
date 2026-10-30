@@ -6,7 +6,7 @@ Frontend React + Vite para consultar os resultados de uma corrida de rua.
 
 1. Instale as dependências com `npm install`.
 2. Copie `.env.example` para `.env` e configure:
-   - `VITE_API_BASE_URL=https://placar-corrida-rua-backend.onrender.com` para o proxy REST local;
+   - `VITE_API_BASE_URL=http://localhost:3001` para o proxy REST local;
    - `VITE_REALTIME_URL=http://localhost:3001` para o Socket.IO local;
    - `VITE_EVENT_SLUG=corrida` para o evento assinado.
 3. Inicie o servidor local com `npm run dev`. O Vite encaminhará `/api/*` à API configurada.
