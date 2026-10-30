@@ -7,7 +7,7 @@ function isValidPayload(payload) {
 }
 
 function isPositiveAcknowledgment(response) {
-  return response === true || response?.ok === true
+  return response === true || response?.ok === true || response?.subscribed === true
 }
 
 export function createResultsRealtime({

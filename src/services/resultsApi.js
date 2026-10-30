@@ -20,7 +20,7 @@ export const REALTIME_URL = (() => {
 
 export const EVENT_SLUG = (
   import.meta.env.VITE_EVENT_SLUG ||
-  'corrida-demonstracao-mvp'
+  'corrida'
 ).trim()
 
 async function requestJson(url, signal) {

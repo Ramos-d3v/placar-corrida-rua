@@ -43,7 +43,7 @@ test('subscribes after connect and refreshes on result notifications', () => {
   const subscription = socket.emitted[0]
   assert.equal(subscription.event, 'subscribe')
   assert.deepEqual(subscription.args[0], { event_slug: 'corrida-demonstracao-mvp' })
-  subscription.args[1]({ ok: true })
+  subscription.args[1]({ subscribed: true, room: 'results:corrida' })
   socket.trigger('results.updated', {})
   socket.trigger('results.reset')
   assert.equal(refreshes, 2)
