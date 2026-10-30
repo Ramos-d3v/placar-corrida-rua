@@ -2,6 +2,27 @@ export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '')
   .trim()
   .replace(/\/+$/, '')
 
+const DEFAULT_REALTIME_URL = 'https://placar-corrida-rua-backend.onrender.com'
+const configuredRealtimeUrl = (
+  import.meta.env.VITE_REALTIME_URL ||
+  API_BASE_URL ||
+  DEFAULT_REALTIME_URL
+).trim().replace(/\/+$/, '')
+
+export const REALTIME_URL = (() => {
+  try {
+    const url = new URL(configuredRealtimeUrl)
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString().replace(/\/+$/, '') : ''
+  } catch {
+    return ''
+  }
+})()
+
+export const EVENT_SLUG = (
+  import.meta.env.VITE_EVENT_SLUG ||
+  'corrida-demonstracao-mvp'
+).trim()
+
 async function requestJson(url, signal) {
   const response = await fetch(url, {
     signal,

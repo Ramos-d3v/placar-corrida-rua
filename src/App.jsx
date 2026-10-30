@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   API_BASE_URL,
+  EVENT_SLUG,
+  REALTIME_URL,
   fetchParticipant,
   fetchResults,
 } from './services/resultsApi.js'
+import { createResultsRealtime } from './services/resultsRealtime.js'
 
 const PAGE_SIZE = 50
 const AGE_CATEGORIES = [
@@ -215,6 +218,20 @@ function App() {
 
     return () => controller.abort()
   }, [bibNumber, page, selectedGender, category, search, refreshKey])
+
+  useEffect(() => {
+    if (bibNumber || !REALTIME_URL || !EVENT_SLUG) return undefined
+
+    const realtime = createResultsRealtime({
+      url: REALTIME_URL,
+      eventSlug: EVENT_SLUG,
+      onRefresh: () => setRefreshKey((current) => current + 1),
+      onError: (error) => console.error('[realtime] conexão indisponível:', error),
+    })
+
+    realtime.start()
+    return () => realtime.stop()
+  }, [bibNumber])
 
   useEffect(() => {
     if (!bibNumber) return undefined

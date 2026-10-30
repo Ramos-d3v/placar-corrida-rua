@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "dependencies": {
     "@neon/config": "^1.9.1",
@@ -15,6 +16,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
