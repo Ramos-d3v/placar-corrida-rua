@@ -737,6 +737,7 @@ function ResultsTable({ results, category, onSelect }) {
             <th className="bib-heading">PEITO</th>
             <th className="category-heading">CATEGORIA</th>
             <th className="time-heading">TEMPO</th>
+            <th className="pace-heading">PACE</th>
             <th className="team-heading">EQUIPE</th>
             <th><span className="sr-only">Detalhes</span></th>
           </tr>
@@ -765,6 +766,7 @@ function ResultsTable({ results, category, onSelect }) {
                 <td className="bib-cell"><span>#{result.bib_number}</span></td>
                 <td className="category-cell">{formatCategory(result.category) || '—'}</td>
                 <td className="time-cell">{formatTime(time)}</td>
+                <td className="time-cell">{formatTime(result.pace)}</td>
                 <td className="team-cell">{result.team_name || '—'}</td>
                 <td className="row-action-cell">
                   <button className="row-action" type="button" onClick={() => onSelect(result.bib_number)} aria-label={`Ver resultado de ${result.athlete_name}`}>
