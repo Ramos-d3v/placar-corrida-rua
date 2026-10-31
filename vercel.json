@@ -3,6 +3,14 @@
     {
       "source": "/api/:path*",
       "destination": "https://placar-corrida-rua-backend.onrender.com/api/:path*"
+    },
+    {
+      "source": "/resultados/:bib*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
