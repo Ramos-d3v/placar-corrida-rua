@@ -13,7 +13,9 @@ function isPositiveAcknowledgment(response) {
 export function createResultsRealtime({
   url,
   eventSlug,
-  onRefresh,
+  onRefresh = () => {},
+  onAthleteUpdated = () => {},
+  onStatusChange = () => {},
   onError = () => {},
   socketFactory = io,
   ackTimeoutMs = 5000,
@@ -23,7 +25,10 @@ export function createResultsRealtime({
   let subscriptionTimer
 
   const reportError = (error) => {
-    if (!stopped) onError(error instanceof Error ? error : new Error(String(error)))
+    if (!stopped) {
+      onStatusChange('error')
+      onError(error instanceof Error ? error : new Error(String(error)))
+    }
   }
 
   const subscribe = () => {
@@ -44,23 +49,47 @@ export function createResultsRealtime({
     })
   }
 
-  const handleNotification = (payload) => {
+  const handleNotification = (payload, eventName) => {
     if (!isValidPayload(payload)) {
       reportError(new Error('O evento realtime recebeu um payload inválido.'))
       return
     }
 
-    onRefresh()
+    onRefresh(payload, eventName)
+  }
+
+  const handleAthleteUpdated = (payload) => {
+    if (!isValidPayload(payload)) {
+      reportError(new Error('O evento athlete.updated recebeu um payload inválido.'))
+      return
+    }
+
+    onAthleteUpdated(payload)
+    onRefresh(payload, 'athlete.updated')
   }
 
   const listeners = {
-    connect: subscribe,
-    connect_error: (error) => reportError(error || new Error('Falha na conexão realtime.')),
-    disconnect: (reason) => reportError(new Error(`Conexão realtime encerrada: ${reason || 'desconhecido'}.`)),
+    connect: () => {
+      onStatusChange('connected')
+      subscribe()
+    },
+    connect_error: (error) => {
+      reportError(error || new Error('Falha na conexão realtime.'))
+    },
+    disconnect: (reason) => {
+      if (!stopped) onStatusChange('disconnected')
+      reportError(new Error(`Conexão realtime encerrada: ${reason || 'desconhecido'}.`))
+    },
+    'athlete.updated': handleAthleteUpdated,
+    'results.pending': (payload) => {
+      if (isValidPayload(payload)) {
+        onRefresh(payload, 'results.pending')
+      }
+    },
   }
 
   for (const eventName of REFRESH_EVENTS) {
-    listeners[eventName] = handleNotification
+    listeners[eventName] = (payload) => handleNotification(payload, eventName)
   }
 
   return {
@@ -68,7 +97,15 @@ export function createResultsRealtime({
       if (socket || !url || !eventSlug) return
 
       stopped = false
-      socket = socketFactory(url, { transports: ['websocket'] })
+      onStatusChange('connecting')
+      socket = socketFactory(url, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 10000,
+      })
       Object.entries(listeners).forEach(([eventName, listener]) => {
         socket.on(eventName, listener)
       })
@@ -77,12 +114,51 @@ export function createResultsRealtime({
       if (!socket) return
 
       stopped = true
+      onStatusChange('disconnected')
       clearTimeout(subscriptionTimer)
       Object.entries(listeners).forEach(([eventName, listener]) => {
         socket.off(eventName, listener)
       })
-      socket.disconnect()
+
+      const targetSocket = socket
       socket = undefined
+
+      if (
+        typeof targetSocket.connected === 'boolean' &&
+        !targetSocket.connected &&
+        typeof targetSocket.once === 'function'
+      ) {
+        const timer = setTimeout(() => {
+          try {
+            targetSocket.disconnect()
+          } catch {
+            // ignore
+          }
+        }, 1000)
+
+        targetSocket.once('connect', () => {
+          clearTimeout(timer)
+          try {
+            targetSocket.disconnect()
+          } catch {
+            // ignore
+          }
+        })
+
+        targetSocket.once('connect_error', () => {
+          clearTimeout(timer)
+          try {
+            targetSocket.disconnect()
+          } catch {
+            // ignore
+          }
+        })
+      } else {
+        targetSocket.disconnect()
+      }
+    },
+    getSocket() {
+      return socket
     },
   }
 }

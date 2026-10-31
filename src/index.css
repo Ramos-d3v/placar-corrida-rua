@@ -1092,7 +1092,7 @@ main {
 
 .participant-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   margin-top: 24px;
   border: 1px solid var(--line);
 }

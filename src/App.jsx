@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   API_BASE_URL,
   EVENT_SLUG,
@@ -43,6 +43,55 @@ function getBibFromPath() {
   } catch {
     return ''
   }
+}
+
+function getInitialGender() {
+  if (typeof window === 'undefined') return 'feminino'
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const fromUrl = params.get('genero') || params.get('gender')
+    if (fromUrl) {
+      const match = GENDER_TABS.find(
+        (t) => t.id === fromUrl.toLowerCase() || t.gender.toLowerCase() === fromUrl.toLowerCase(),
+      )
+      if (match) return match.id
+    }
+
+    const saved = localStorage.getItem('placar_gender')
+    if (saved && GENDER_TABS.some((t) => t.id === saved)) {
+      return saved
+    }
+  } catch {
+    // ignore
+  }
+  return 'feminino'
+}
+
+function getInitialCategory(currentGender) {
+  const tab = GENDER_TABS.find((t) => t.id === currentGender) || GENDER_TABS[0]
+  const defaultCat = `${tab.prefix}${AGE_CATEGORIES[0]}`
+
+  if (typeof window === 'undefined') return defaultCat
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const fromUrl = params.get('categoria') || params.get('category')
+    if (fromUrl) {
+      const match = CATEGORY_OPTIONS.find((c) => c.value.toLowerCase() === fromUrl.toLowerCase())
+      if (match) return match.value
+    }
+
+    const saved = localStorage.getItem('placar_category')
+    if (saved) {
+      const option = CATEGORY_OPTIONS.find((c) => c.value === saved)
+      if (option && option.genderTab === currentGender) {
+        return option.value
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return defaultCat
 }
 
 function formatTime(value) {
@@ -147,8 +196,8 @@ function Icon({ name, size = 18 }) {
 }
 
 function App() {
-  const [genderTab, setGenderTab] = useState('feminino')
-  const [category, setCategory] = useState('F15-19')
+  const [genderTab, setGenderTab] = useState(getInitialGender)
+  const [category, setCategory] = useState(() => getInitialCategory(getInitialGender()))
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -161,6 +210,15 @@ function App() {
   const [participant, setParticipant] = useState(null)
   const [participantLoading, setParticipantLoading] = useState(() => Boolean(getBibFromPath()))
   const [participantError, setParticipantError] = useState('')
+  const [realtimeStatus, setRealtimeStatus] = useState('disconnected')
+  const refreshTimerRef = useRef(null)
+
+  const triggerBackgroundRefresh = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+    refreshTimerRef.current = setTimeout(() => {
+      setRefreshKey((current) => current + 1)
+    }, 300)
+  }, [])
 
   const beginListLoad = useCallback(() => {
     setListLoading(true)
@@ -173,6 +231,30 @@ function App() {
   )
 
   useEffect(() => {
+    try {
+      localStorage.setItem('placar_gender', genderTab)
+      if (category) {
+        localStorage.setItem('placar_category', category)
+      } else {
+        localStorage.removeItem('placar_category')
+      }
+    } catch {
+      // ignore
+    }
+
+    if (!bibNumber && typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('genero', genderTab)
+      if (category) {
+        url.searchParams.set('categoria', category)
+      } else {
+        url.searchParams.delete('categoria')
+      }
+      window.history.replaceState(window.history.state, '', url.pathname + url.search)
+    }
+  }, [genderTab, category, bibNumber])
+
+  useEffect(() => {
     const syncPath = () => {
       const nextBibNumber = getBibFromPath()
       setBibNumber(nextBibNumber)
@@ -182,6 +264,10 @@ function App() {
         setParticipantError('')
         setParticipantLoading(true)
       } else {
+        const nextGender = getInitialGender()
+        const nextCategory = getInitialCategory(nextGender)
+        setGenderTab(nextGender)
+        setCategory(nextCategory)
         beginListLoad()
       }
     }
@@ -220,18 +306,61 @@ function App() {
   }, [bibNumber, page, selectedGender, category, search, refreshKey])
 
   useEffect(() => {
-    if (bibNumber || !REALTIME_URL || !EVENT_SLUG) return undefined
+    if (!REALTIME_URL || !EVENT_SLUG) return undefined
 
     const realtime = createResultsRealtime({
       url: REALTIME_URL,
       eventSlug: EVENT_SLUG,
-      onRefresh: () => setRefreshKey((current) => current + 1),
-      onError: (error) => console.error('[realtime] conexão indisponível:', error),
+      onRefresh: (_payload, eventName) => {
+        if (eventName === 'results.reset') {
+          setListData({
+            event: null,
+            pagination: { page: 1, limit: PAGE_SIZE, total: 0 },
+            results: [],
+          })
+          setParticipant(null)
+          return
+        }
+        triggerBackgroundRefresh()
+      },
+      onAthleteUpdated: (payload) => {
+        const updatedAthlete = payload?.result
+        if (!updatedAthlete) return
+
+        setParticipant((current) => {
+          if (!current || !current.result) return current
+          if (String(current.result.bib_number) === String(updatedAthlete.bib_number)) {
+            return {
+              event: payload.event || current.event,
+              result: { ...current.result, ...updatedAthlete },
+            }
+          }
+          return current
+        })
+
+        setListData((current) => {
+          if (!current?.results) return current
+          const index = current.results.findIndex(
+            (r) => String(r.bib_number) === String(updatedAthlete.bib_number),
+          )
+          if (index === -1) return current
+          const nextResults = [...current.results]
+          nextResults[index] = { ...nextResults[index], ...updatedAthlete }
+          return { ...current, results: nextResults }
+        })
+
+        triggerBackgroundRefresh()
+      },
+      onStatusChange: (status) => setRealtimeStatus(status),
+      onError: (error) => console.error('[realtime] erro de conexão:', error),
     })
 
     realtime.start()
-    return () => realtime.stop()
-  }, [bibNumber])
+    return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+      realtime.stop()
+    }
+  }, [triggerBackgroundRefresh])
 
   useEffect(() => {
     if (!bibNumber) return undefined
@@ -262,12 +391,17 @@ function App() {
   }, [])
 
   const returnToResults = useCallback(() => {
-    window.history.pushState({}, '', '/')
+    const params = new URLSearchParams()
+    if (genderTab) params.set('genero', genderTab)
+    if (category) params.set('categoria', category)
+    const qs = params.toString()
+    const targetUrl = qs ? `/?${qs}` : '/'
+    window.history.pushState({}, '', targetUrl)
     beginListLoad()
     setBibNumber('')
     setParticipant(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [beginListLoad])
+  }, [beginListLoad, genderTab, category])
 
   const applySearch = (event) => {
     event.preventDefault()
@@ -279,7 +413,14 @@ function App() {
   const changeGender = (tab) => {
     beginListLoad()
     setGenderTab(tab.id)
-    setCategory(`${tab.prefix}${category.slice(1) || AGE_CATEGORIES[0]}`)
+    const nextCategory = `${tab.prefix}${category.slice(1) || AGE_CATEGORIES[0]}`
+    setCategory(nextCategory)
+    try {
+      localStorage.setItem('placar_gender', tab.id)
+      localStorage.setItem('placar_category', nextCategory)
+    } catch {
+      // ignore
+    }
     setPage(1)
   }
 
@@ -288,13 +429,33 @@ function App() {
     const nextCategory = event.target.value
     const option = CATEGORY_OPTIONS.find(({ value }) => value === nextCategory)
     setCategory(nextCategory)
-    if (option) setGenderTab(option.genderTab)
+    if (option) {
+      setGenderTab(option.genderTab)
+      try {
+        localStorage.setItem('placar_gender', option.genderTab)
+      } catch {
+        // ignore
+      }
+    }
+    try {
+      localStorage.setItem('placar_category', nextCategory)
+    } catch {
+      // ignore
+    }
     setPage(1)
   }
 
   const changePage = (nextPage) => {
     beginListLoad()
     setPage(nextPage)
+  }
+
+  const resetFilters = () => {
+    beginListLoad()
+    setCategory('')
+    setSearch('')
+    setSearchDraft('')
+    setPage(1)
   }
 
   const event = listData?.event
@@ -329,8 +490,22 @@ function App() {
           <span className="header-caption">CORRIDA DE RUA</span>
           <span className="header-divider" />
           <span className="connection-indicator">
-            <span className={`connection-dot${listError || participantError ? ' is-error' : ''}`} />
-            {listError || participantError ? 'API indisponível' : 'PLACAR OFICIAL'}
+            <span
+              className={`connection-dot${
+                listError || participantError
+                  ? ' is-error'
+                  : realtimeStatus === 'connected'
+                    ? ' is-connected'
+                    : ''
+              }`}
+            />
+            {listError || participantError
+              ? 'API indisponível'
+              : realtimeStatus === 'connected'
+                ? 'AO VIVO · TEMPO REAL'
+                : realtimeStatus === 'connecting'
+                  ? 'CONECTANDO...'
+                  : 'PLACAR OFICIAL'}
           </span>
         </div>
       </header>
@@ -373,7 +548,13 @@ function App() {
                 </div>
                 <div className="board-status" aria-live="polite">
                   <span className={`status-pulse${listError ? ' is-error' : ''}`} />
-                  {listLoading ? 'Atualizando resultados' : listError ? 'Conexão interrompida' : 'Dados da organização'}
+                  {listLoading
+                    ? 'Atualizando resultados'
+                    : listError
+                      ? 'Conexão interrompida'
+                      : realtimeStatus === 'connected'
+                        ? 'Tempo real ativo'
+                        : 'Dados da organização'}
                 </div>
               </div>
 
@@ -420,6 +601,7 @@ function App() {
                   <label className="category-filter">
                     <span className="sr-only">Filtrar por categoria</span>
                     <select value={category} onChange={changeCategory}>
+                      <option value="">Todas as categorias</option>
                       {CATEGORY_OPTIONS.map((option) => (
                         <option value={option.value} key={option.value}>{option.label}</option>
                       ))}
@@ -497,14 +679,7 @@ function App() {
                   <h3>Nenhum resultado encontrado</h3>
                   <p>Experimente outra busca ou remova um dos filtros selecionados.</p>
                   {(activeFilters.length > 0 || search) && (
-                    <button className="reset-filters" type="button" onClick={() => {
-                      beginListLoad()
-                      setGenderTab('feminino')
-                      setCategory('')
-                      setSearch('')
-                      setSearchDraft('')
-                      setPage(1)
-                    }}>Limpar filtros</button>
+                    <button className="reset-filters" type="button" onClick={resetFilters}>Limpar filtros</button>
                   )}
                 </div>
               ) : (
@@ -662,6 +837,10 @@ function ParticipantDetail({ bibNumber, participant, loading, error, onBack }) {
             <div className="participant-stat">
               <span>{result.time_net ? 'TEMPO LÍQUIDO' : 'TEMPO BRUTO'}</span>
               <strong className="participant-time">{formatTime(result.time_net || result.time_gross)}</strong>
+            </div>
+            <div className="participant-stat">
+              <span>PACE</span>
+              <strong className="participant-time">{formatTime(result.pace)}</strong>
             </div>
             <div className="participant-stat">
               <span>STATUS</span>

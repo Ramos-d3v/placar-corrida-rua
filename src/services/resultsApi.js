@@ -1,10 +1,15 @@
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '')
+const env =
+  typeof import.meta !== 'undefined' && import.meta.env
+    ? import.meta.env
+    : (typeof process !== 'undefined' && process.env) || {}
+
+export const API_BASE_URL = (env.VITE_API_BASE_URL || '')
   .trim()
   .replace(/\/+$/, '')
 
 const DEFAULT_REALTIME_URL = 'https://placar-corrida-rua-backend.onrender.com'
 const configuredRealtimeUrl = (
-  import.meta.env.VITE_REALTIME_URL ||
+  env.VITE_REALTIME_URL ||
   API_BASE_URL ||
   DEFAULT_REALTIME_URL
 ).trim().replace(/\/+$/, '')
@@ -19,9 +24,18 @@ export const REALTIME_URL = (() => {
 })()
 
 export const EVENT_SLUG = (
-  import.meta.env.VITE_EVENT_SLUG ||
+  env.VITE_EVENT_SLUG ||
   'corrida'
 ).trim()
+
+export function buildApiUrl(path) {
+  const base =
+    API_BASE_URL ||
+    (typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost/5174')
+  return new URL(path, base)
+}
 
 async function requestJson(url, signal) {
   const response = await fetch(url, {
@@ -60,17 +74,19 @@ export async function fetchResults({
   gender = '',
   category = '',
   search = '',
+  eventSlug = EVENT_SLUG,
   signal,
 }) {
-  const url = new URL('/api/results', window.location.origin)
+  const url = buildApiUrl('/api/results')
   url.searchParams.set('page', String(page))
   url.searchParams.set('limit', String(Math.min(Math.max(limit, 1), 100)))
 
   if (gender) url.searchParams.set('gender', gender)
   if (category) url.searchParams.set('category', category)
   if (search) url.searchParams.set('search', search)
+  if (eventSlug) url.searchParams.set('event_slug', eventSlug)
 
-  const payload = await requestJson(url, signal)
+  const payload = await requestJson(url.toString(), signal)
 
   if (!Array.isArray(payload.results)) {
     throw new Error('A resposta da API não contém uma lista de resultados válida.')
@@ -79,7 +95,8 @@ export async function fetchResults({
   return payload
 }
 
-export async function fetchParticipant(bibNumber, signal) {
-  const url = `/api/results/${encodeURIComponent(bibNumber)}`
-  return requestJson(url, signal)
+export async function fetchParticipant(bibNumber, signal, eventSlug = EVENT_SLUG) {
+  const url = buildApiUrl(`/api/results/${encodeURIComponent(bibNumber)}`)
+  if (eventSlug) url.searchParams.set('event_slug', eventSlug)
+  return requestJson(url.toString(), signal)
 }

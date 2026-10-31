@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createResultsRealtime } from './resultsRealtime.js'
+import { buildApiUrl } from './resultsApi.js'
 
 function createFakeSocket() {
   const listeners = new Map()
@@ -67,4 +68,45 @@ test('reports invalid subscription acknowledgments and cleans up', () => {
 
   assert.equal(errors.length, 1)
   assert.equal(socket.disconnected, true)
+})
+
+test('notifies athlete updates and status transitions', () => {
+  const socket = createFakeSocket()
+  const statuses = []
+  const athleteUpdates = []
+  const refreshes = []
+
+  const realtime = createResultsRealtime({
+    url: 'https://example.com',
+    eventSlug: 'corrida',
+    socketFactory: () => socket,
+    onStatusChange: (status) => statuses.push(status),
+    onAthleteUpdated: (data) => athleteUpdates.push(data),
+    onRefresh: (payload, eventName) => refreshes.push({ payload, eventName }),
+  })
+
+  realtime.start()
+  assert.equal(statuses[0], 'connecting')
+
+  socket.trigger('connect')
+  assert.equal(statuses[1], 'connected')
+
+  const sampleAthlete = {
+    event_slug: 'corrida',
+    result: { bib_number: '1001', athlete_name: 'Ana Silva' },
+  }
+  socket.trigger('athlete.updated', sampleAthlete)
+
+  assert.equal(athleteUpdates.length, 1)
+  assert.deepEqual(athleteUpdates[0], sampleAthlete)
+  assert.equal(refreshes.length, 1)
+  assert.equal(refreshes[0].eventName, 'athlete.updated')
+
+  realtime.stop()
+  assert.equal(statuses[statuses.length - 1], 'disconnected')
+})
+
+test('buildApiUrl constructs valid URLs with configured base', () => {
+  const url = buildApiUrl('/api/results')
+  assert.ok(url.pathname.endsWith('/api/results'))
 })
