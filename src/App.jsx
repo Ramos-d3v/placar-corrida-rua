@@ -175,12 +175,13 @@ function Icon({ name, size = 18 }) {
 function App() {
   const [genderTab, setGenderTab] = useState(getInitialGender)
   const [category, setCategory] = useState(() => {
-    try {
-      return localStorage.getItem('placar_category') || ''
-    } catch {
-      return ''
-    }
-  })
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get('categoria');
+    if (catParam) return catParam;
+  }
+  return ''; // Começa em "Todas as categorias" por padrão
+});
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -394,18 +395,19 @@ function App() {
   }
 
   const changeGender = (tab) => {
-    beginListLoad()
-    setGenderTab(tab.id)
-    const nextCategory = `${tab.prefix}${category.slice(1) || AGE_CATEGORIES[0]}`
-    setCategory(nextCategory)
-    try {
-      localStorage.setItem('placar_gender', tab.id)
-      localStorage.setItem('placar_category', nextCategory)
-    } catch {
-      // ignore
-    }
-    setPage(1)
+  beginListLoad();
+  setGenderTab(tab.id);
+  
+  setCategory(''); 
+
+  try {
+    localStorage.setItem('placar_gender', tab.id);
+    localStorage.removeItem('placar_category'); // Remove categoria fixa ao trocar gênero
+  } catch {
+    // ignore
   }
+  setPage(1);
+};
 
   const changeCategory = (event) => {
     beginListLoad()
