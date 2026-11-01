@@ -67,31 +67,8 @@ function getInitialGender() {
   return 'feminino'
 }
 
-function getInitialCategory(currentGender) {
-  const tab = GENDER_TABS.find((t) => t.id === currentGender) || GENDER_TABS[0]
-  const defaultCat = `${tab.prefix}${AGE_CATEGORIES[0]}`
-
-  if (typeof window === 'undefined') return defaultCat
-  try {
-    const params = new URLSearchParams(window.location.search)
-    const fromUrl = params.get('categoria') || params.get('category')
-    if (fromUrl) {
-      const match = CATEGORY_OPTIONS.find((c) => c.value.toLowerCase() === fromUrl.toLowerCase())
-      if (match) return match.value
-    }
-
-    const saved = localStorage.getItem('placar_category')
-    if (saved) {
-      const option = CATEGORY_OPTIONS.find((c) => c.value === saved)
-      if (option && option.genderTab === currentGender) {
-        return option.value
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  return defaultCat
+function getInitialCategory() {
+  return ''
 }
 
 function formatTime(value) {
@@ -197,7 +174,13 @@ function Icon({ name, size = 18 }) {
 
 function App() {
   const [genderTab, setGenderTab] = useState(getInitialGender)
-  const [category, setCategory] = useState(() => getInitialCategory(getInitialGender()))
+  const [category, setCategory] = useState(() => {
+    try {
+      return localStorage.getItem('placar_category') || ''
+    } catch {
+      return ''
+    }
+  })
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
